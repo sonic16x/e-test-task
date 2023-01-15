@@ -46,6 +46,12 @@ td[data-selected=true]{
   color: #27426c;
   padding: 10px;
   font-size: 15px;
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  background: #ddd;
+  cursor: not-allowed;
 }
 
 .controls button:first-child {
