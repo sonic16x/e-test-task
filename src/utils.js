@@ -8,6 +8,7 @@ export function getGrid(width, height) {
                 parent: null,
                 colSpan: 1,
                 rowSpan: 1,
+                key: getCellKey(row, col),
             });
         }
     }
@@ -28,14 +29,12 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
         for (let col = colStart; col <= colEnd; col++) {
             const cell = grid[row][col];
 
-            const cellKey = getCellKey(row, col);
-
-            if (!selected.has(cellKey)) {
-                selected.add(cellKey);
+            if (!selected.has(cell.key)) {
+                selected.add(cell.key);
             }
 
-            if (cell.root && !processedRoots.has(cellKey)) {
-                processedRoots.add(cellKey);
+            if (cell.root && !processedRoots.has(cell.key)) {
+                processedRoots.add(cell.key);
                 getSelected(
                     grid,
                     [
@@ -49,11 +48,10 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
             if (cell.parent) {
                 const parentRow = cell.parent[0];
                 const parentCol = cell.parent[1];
-                const parentKey = getCellKey(parentRow, parentCol);
                 const parentCell = grid[parentRow][parentCol];
 
-                if (!processedRoots.has(parentKey)) {
-                    processedRoots.add(parentKey);
+                if (!processedRoots.has(parentCell.key)) {
+                    processedRoots.add(parentCell.key);
                     getSelected(
                         grid,
                         [
@@ -108,6 +106,7 @@ export function getMergedGrid(grid, selectedSet) {
                 parent: current ? null : [minRow, minCol],
                 colSpan: current ? (maxCol - minCol + 1) : 1,
                 rowSpan: current ? (maxRow - minRow + 1) : 1,
+                key: getCellKey(rowIndex, colIndex),
             }
         }
 
@@ -155,6 +154,7 @@ export function getSeparatedGrid(grid, selectedSet) {
                 parent: null,
                 colSpan: 1,
                 rowSpan: 1,
+                key: getCellKey(rowIndex, colIndex),
             }
         }
 

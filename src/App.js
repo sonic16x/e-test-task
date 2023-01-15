@@ -2,7 +2,8 @@ import {useEffect, useState} from "react";
 
 import './styles.css';
 
-import {getGrid, getSelected, getMergedGrid, getSeparatedGrid, getCellKey, getCellFromTarget} from './utils';
+import {getGrid, getSelected, getMergedGrid, getSeparatedGrid, getCellFromTarget} from './utils';
+import {GridCell} from "./GridCell";
 
 export const App = () => {
     const searchParams = new URLSearchParams(document.location.search);
@@ -95,26 +96,17 @@ export const App = () => {
                 <tbody>
                 {grid.map((gridRow, rowIndex) => (
                     <tr key={rowIndex}>
-                        {gridRow.map((gridCell, colIndex) => {
-                            if (gridCell.parent) {
-                                return null;
-                            }
-
-                            const cellKey = getCellKey(rowIndex, colIndex);
-
-                            return (
-                                <td
-                                    data-selected={isSelected(cellKey)}
-                                    data-row-index={rowIndex}
-                                    data-col-index={colIndex}
-                                    key={cellKey}
-                                    colSpan={gridCell.colSpan}
-                                    rowSpan={gridCell.rowSpan}
-                                >
-                                    row: {rowIndex} col: {colIndex}
-                                </td>
-                            );
-                        })}
+                        {gridRow.map((gridCell, colIndex) => (
+                            <GridCell
+                                parent={gridCell.parent}
+                                colSpan={gridCell.colSpan}
+                                rowSpan={gridCell.rowSpan}
+                                isSelected={isSelected(gridCell.key)}
+                                key={colIndex}
+                                rowIndex={rowIndex}
+                                colIndex={colIndex}
+                            />
+                        ))}
                     </tr>
                 ))}
                 </tbody>
