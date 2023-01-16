@@ -1,3 +1,9 @@
+// get string key for cell by row and col indexes
+export function getCellKey(rowIndex, colIndex) {
+    return `${rowIndex}-${colIndex}`;
+}
+
+// generate grid by size
 export function getGrid(width, height) {
     const grid = [];
 
@@ -5,10 +11,11 @@ export function getGrid(width, height) {
         grid.push([]);
         for (let col = 0; col < width; col++) {
             grid[row].push({
-                parent: null,
+                root: false, // mean that this cell root for another cells (main cell after merge)
+                parent: null, // mean that this cell has parent (after merge)
                 colSpan: 1,
                 rowSpan: 1,
-                key: getCellKey(row, col),
+                key: getCellKey(row, col), // string key of cell for using as key for component and index for Set
             });
         }
     }
@@ -16,48 +23,52 @@ export function getGrid(width, height) {
     return grid;
 }
 
+// get selected cells Set
 export function getSelected(grid, selection, selected = new Set(), processedRoots = new Set()) {
-    const [startCell, endCell] = selection;
+    const {startCell, endCell} = selection;
 
-    const rowStart = startCell[0] < endCell[0] ? startCell[0] : endCell[0];
-    const rowEnd = startCell[0] < endCell[0] ? endCell[0] : startCell[0];
+    // calculate real start and end cells
+    const rowStart = Math.min(startCell[0], endCell[0]);
+    const rowEnd = Math.max(startCell[0], endCell[0]);
 
-    const colStart = startCell[1] < endCell[1] ? startCell[1] : endCell[1];
-    const colEnd = startCell[1] < endCell[1] ? endCell[1] : startCell[1];
+    const colStart = Math.min(startCell[1], endCell[1]);
+    const colEnd = Math.max(endCell[1], startCell[1]);
 
     for (let row = rowStart; row <= rowEnd; row++) {
         for (let col = colStart; col <= colEnd; col++) {
             const cell = grid[row][col];
 
+            // add this cell to selected Set
             if (!selected.has(cell.key)) {
                 selected.add(cell.key);
             }
 
-            if (cell.root && !processedRoots.has(cell.key)) {
-                processedRoots.add(cell.key);
-                getSelected(
-                    grid,
-                    [
-                        [rowStart, colStart],
-                        [Math.max(...[row + cell.rowSpan - 1, rowEnd]), Math.max(...[col + cell.colSpan - 1, colEnd])],
-                    ],
-                    selected,
-                    processedRoots,
-                );
-            }
-            if (cell.parent) {
-                const parentRow = cell.parent[0];
-                const parentCol = cell.parent[1];
-                const parentCell = grid[parentRow][parentCol];
+            // if this cell root or has parent process new area recursively from start to end area
+            if (cell.root || cell.parent) {
+                // get data for parent cell
+                const parentRow = cell.root ? row : cell.parent[0];
+                const parentCol = cell.root ? col : cell.parent[1];
+                const parentCell = cell.root ? cell : grid[parentRow][parentCol];
+                const parentKey = parentCell.key;
 
-                if (!processedRoots.has(parentCell.key)) {
-                    processedRoots.add(parentCell.key);
+                // check if this parent processed
+                if (!processedRoots.has(parentKey)) {
+                    processedRoots.add(parentKey); // set that this parent already processed
+
+                    // calculate start and end cells for new area
+                    const startCell = [
+                        Math.min(rowStart, parentRow),
+                        Math.min(colStart, parentCol),
+                    ];
+                    const endCell = [
+                        Math.max(parentRow + parentCell.rowSpan - 1, rowEnd),
+                        Math.max(parentCol + parentCell.colSpan - 1, colEnd),
+                    ];
+
+                    // get new selected cells for this area recursively
                     getSelected(
                         grid,
-                        [
-                            [Math.min(...[rowStart, parentRow]), Math.min(...[colStart, parentCol])],
-                            [Math.max(...[parentRow + parentCell.rowSpan - 1, rowEnd]), Math.max(...[parentCol + parentCell.colSpan - 1, colEnd])],
-                        ],
+                        {startCell, endCell},
                         selected,
                         processedRoots,
                     );
@@ -69,10 +80,7 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
     return selected;
 }
 
-export function getCellKey(rowIndex, colIndex) {
-    return `${rowIndex}-${colIndex}`;
-}
-
+// get merged cells using selection and get new selection after merge
 export function getMergedGrid(grid, selectedSet) {
     let minRow = grid.length - 1;
     let minCol = grid[0].length - 1;
@@ -80,6 +88,7 @@ export function getMergedGrid(grid, selectedSet) {
     let maxRow = 0;
     let maxCol = 0;
 
+    // calculate start and end cells from selected cells
     grid.forEach((gridRow, rowIndex) => gridRow.forEach((gridCell, colIndex) => {
         if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
             if (rowIndex < minRow) {
@@ -97,6 +106,7 @@ export function getMergedGrid(grid, selectedSet) {
         }
     }));
 
+    // change grid and set for all selected cells root as start cell
     const mergedGrid = grid.map((gridRow, rowIndex) => gridRow.map((gridCell, colIndex) => {
         if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
             const current = rowIndex === minRow && colIndex === minCol;
@@ -115,19 +125,20 @@ export function getMergedGrid(grid, selectedSet) {
 
     return {
         grid: mergedGrid,
-        selection: [
-            [
+        selection: {
+            startCell: [
                 minRow,
                 minCol,
             ],
-            [
+            endCell: [
                 maxRow,
                 maxCol,
             ],
-        ],
+        },
     };
 }
 
+// get separated grid using selection and get new selection after separate
 export function getSeparatedGrid(grid, selectedSet) {
     let minRow = grid.length - 1;
     let minCol = grid[0].length - 1;
@@ -135,6 +146,7 @@ export function getSeparatedGrid(grid, selectedSet) {
     let maxRow = 0;
     let maxCol = 0;
 
+    // for all selected cells calculate start and end cells for new selection and remove parent cell and spans (set as 1)
     const separatedGrid = grid.map((gridRow, rowIndex) => gridRow.map((gridCell, colIndex) => {
         if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
             if (rowIndex < minRow) {
@@ -163,19 +175,20 @@ export function getSeparatedGrid(grid, selectedSet) {
 
     return {
         grid: separatedGrid,
-        selection: [
-            [
+        selection: {
+            startCell: [
                 minRow,
                 minCol,
             ],
-            [
+            endCell: [
                 maxRow,
                 maxCol,
             ],
-        ],
+        },
     };
 }
 
+// helper for get data of cell from event target
 export function getCellFromTarget(target) {
     const rowIndex = parseInt(target.getAttribute('data-row-index'));
     const colIndex = parseInt(target.getAttribute('data-col-index'));

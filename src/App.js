@@ -1,9 +1,9 @@
-import {useEffect, useState} from "react";
+import {useEffect, useState} from 'react';
 
 import './styles.css';
 
 import {getGrid, getSelected, getMergedGrid, getSeparatedGrid, getCellFromTarget} from './utils';
-import {GridCell} from "./GridCell";
+import {GridCell} from './GridCell';
 
 export const App = () => {
     const searchParams = new URLSearchParams(document.location.search);
@@ -11,7 +11,7 @@ export const App = () => {
     const height = searchParams.get('height');
 
     const [grid, setGrid] = useState([]);
-    const [selection, setSelection] = useState([]);
+    const [selection, setSelection] = useState(null); // null || {startCell: [rowIndex, colIndex], endCell[rowIndex, colIndex]}
     const [isMoving, setMoving] = useState(false);
     const [selectedSet, setSelectedSet] = useState(new Set());
 
@@ -20,7 +20,7 @@ export const App = () => {
     }, [width, height]);
 
     useEffect(() => {
-        if (selection.length === 2) {
+        if (selection) {
             setSelectedSet(getSelected(grid, selection));
         }
     }, [selection, grid]);
@@ -30,7 +30,7 @@ export const App = () => {
     }
 
     const onMergeClick = () => {
-        if (selection.length > 1) {
+        if (selection) {
             const result = getMergedGrid(grid, selectedSet);
             setGrid(result.grid);
             setSelection(result.selection);
@@ -38,7 +38,7 @@ export const App = () => {
     }
 
     const onSeparateClick = () => {
-        if (selection.length > 1) {
+        if (selection) {
             const result = getSeparatedGrid(grid, selectedSet);
             setGrid(result.grid);
             setSelection(result.selection);
@@ -47,25 +47,26 @@ export const App = () => {
 
     const onDown = (e) => {
         const {rowIndex, colIndex} = getCellFromTarget(e.target);
-        setSelection([[rowIndex, colIndex]]);
+        setSelection({
+            startCell: [rowIndex, colIndex],
+            endCell: [rowIndex, colIndex],
+        });
         setMoving(true);
     }
 
-    const onUp = (e) => {
+    const onUp = () => {
         setMoving(false);
-        const {rowIndex, colIndex} = getCellFromTarget(e.target);
-
-        if (selection.length < 2 || rowIndex !== selection[1][0] || colIndex !== selection[1][1]) {
-            setSelection((current) => [current[0], [rowIndex, colIndex]]);
-        }
     }
 
     const onMove = (e) => {
-        if (isMoving && selection.length) {
+        if (isMoving) {
             const {rowIndex, colIndex} = getCellFromTarget(e.target);
 
-            if (selection.length < 2 || rowIndex !== selection[1][0] || colIndex !== selection[1][1]) {
-                setSelection((current) => [current[0], [rowIndex, colIndex]]);
+            if (rowIndex !== selection.endCell[0] || colIndex !== selection.endCell[1]) {
+                setSelection(({startCell}) => ({
+                    startCell,
+                    endCell: [rowIndex, colIndex],
+                }));
             }
         }
     }
@@ -76,14 +77,14 @@ export const App = () => {
                 <button
                     data-merge-button
                     onClick={onMergeClick}
-                    disabled={selection.length < 2}
+                    disabled={!selection}
                 >
                     Merge
                 </button>
                 <button
                     data-separate-button
                     onClick={onSeparateClick}
-                    disabled={selection.length < 2}
+                    disabled={!selection}
                 >
                     Separate
                 </button>
@@ -94,21 +95,21 @@ export const App = () => {
                 onMouseMove={onMove}
             >
                 <tbody>
-                {grid.map((gridRow, rowIndex) => (
-                    <tr key={rowIndex}>
-                        {gridRow.map((gridCell, colIndex) => (
-                            <GridCell
-                                parent={gridCell.parent}
-                                colSpan={gridCell.colSpan}
-                                rowSpan={gridCell.rowSpan}
-                                isSelected={isSelected(gridCell.key)}
-                                key={colIndex}
-                                rowIndex={rowIndex}
-                                colIndex={colIndex}
-                            />
-                        ))}
-                    </tr>
-                ))}
+                    {grid.map((gridRow, rowIndex) => (
+                        <tr key={rowIndex}>
+                            {gridRow.map((gridCell, colIndex) => (
+                                <GridCell
+                                    parent={gridCell.parent}
+                                    colSpan={gridCell.colSpan}
+                                    rowSpan={gridCell.rowSpan}
+                                    isSelected={isSelected(gridCell.key)}
+                                    key={gridCell.key}
+                                    rowIndex={rowIndex}
+                                    colIndex={colIndex}
+                                />
+                            ))}
+                        </tr>
+                    ))}
                 </tbody>
             </table>
         </div>
