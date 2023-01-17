@@ -2,32 +2,27 @@ import {useEffect, useState} from 'react';
 
 import './styles.css';
 
-import {getGrid, getSelected, getMergedGrid, getSeparatedGrid, getCellFromTarget} from './utils';
-import {GridCell} from './GridCell';
+import {
+    getInitialGrid,
+    getSelected,
+    getMergedGrid,
+    getSeparatedGrid,
+    getCellFromTarget,
+} from './utils';
+
+import {Grid} from "./Grid";
 
 export const App = () => {
-    const searchParams = new URLSearchParams(document.location.search);
-    const width = searchParams.get('width');
-    const height = searchParams.get('height');
-
-    const [grid, setGrid] = useState([]);
+    const [grid, setGrid] = useState(getInitialGrid());
     const [selection, setSelection] = useState(null); // null || {startCell: [rowIndex, colIndex], endCell[rowIndex, colIndex]}
     const [isMoving, setMoving] = useState(false);
     const [selectedSet, setSelectedSet] = useState(new Set());
-
-    useEffect(() => {
-        setGrid(getGrid(width, height));
-    }, [width, height]);
 
     useEffect(() => {
         if (selection) {
             setSelectedSet(getSelected(grid, selection));
         }
     }, [selection, grid]);
-
-    const isSelected = (cellKey) => {
-        return selectedSet.has(cellKey);
-    }
 
     const onMergeClick = () => {
         if (selection) {
@@ -95,21 +90,10 @@ export const App = () => {
                 onMouseMove={onMove}
             >
                 <tbody>
-                    {grid.map((gridRow, rowIndex) => (
-                        <tr key={rowIndex}>
-                            {gridRow.map((gridCell, colIndex) => (
-                                <GridCell
-                                    parent={gridCell.parent}
-                                    colSpan={gridCell.colSpan}
-                                    rowSpan={gridCell.rowSpan}
-                                    isSelected={isSelected(gridCell.key)}
-                                    key={gridCell.key}
-                                    rowIndex={rowIndex}
-                                    colIndex={colIndex}
-                                />
-                            ))}
-                        </tr>
-                    ))}
+                    <Grid
+                        grid={grid}
+                        selectedSet={selectedSet}
+                    />
                 </tbody>
             </table>
         </div>
