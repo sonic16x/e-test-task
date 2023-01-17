@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useMemo, useState} from 'react';
 
 import './styles.css';
 
@@ -16,12 +16,13 @@ export const App = () => {
     const [grid, setGrid] = useState(getInitialGrid());
     const [selection, setSelection] = useState(null); // null || {startCell: [rowIndex, colIndex], endCell[rowIndex, colIndex]}
     const [isMoving, setMoving] = useState(false);
-    const [selectedSet, setSelectedSet] = useState(new Set());
 
-    useEffect(() => {
+    const selectedSet = useMemo(() => {
         if (selection) {
-            setSelectedSet(getSelected(grid, selection));
+            return getSelected(grid, selection);
         }
+
+        return new Set();
     }, [selection, grid]);
 
     const onMergeClick = () => {
