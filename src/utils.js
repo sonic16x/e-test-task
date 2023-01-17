@@ -3,8 +3,17 @@ export function getCellKey(rowIndex, colIndex) {
     return `${rowIndex}-${colIndex}`;
 }
 
-// generate grid by size
-export function getGrid(width, height) {
+// check cell is selected by key
+export function isSelected(selectedSet, cellKey) {
+    return selectedSet.has(cellKey);
+}
+
+// get initial grid by size from query
+export function getInitialGrid() {
+    const searchParams = new URLSearchParams(document.location.search);
+    const width = Number(searchParams.get('width'));
+    const height = Number(searchParams.get('height'));
+
     const grid = [];
 
     for (let row = 0; row < height; row++) {
@@ -90,7 +99,7 @@ export function getMergedGrid(grid, selectedSet) {
 
     // calculate start and end cells from selected cells
     grid.forEach((gridRow, rowIndex) => gridRow.forEach((gridCell, colIndex) => {
-        if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
+        if (isSelected(selectedSet, getCellKey(rowIndex, colIndex))) {
             if (rowIndex < minRow) {
                 minRow = rowIndex;
             }
@@ -108,7 +117,7 @@ export function getMergedGrid(grid, selectedSet) {
 
     // change grid and set for all selected cells root as start cell
     const mergedGrid = grid.map((gridRow, rowIndex) => gridRow.map((gridCell, colIndex) => {
-        if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
+        if (isSelected(selectedSet, getCellKey(rowIndex, colIndex))) {
             const current = rowIndex === minRow && colIndex === minCol;
 
             return {
@@ -148,7 +157,7 @@ export function getSeparatedGrid(grid, selectedSet) {
 
     // for all selected cells calculate start and end cells for new selection and remove parent cell and spans (set as 1)
     const separatedGrid = grid.map((gridRow, rowIndex) => gridRow.map((gridCell, colIndex) => {
-        if (selectedSet.has(getCellKey(rowIndex, colIndex))) {
+        if (isSelected(selectedSet, getCellKey(rowIndex, colIndex))) {
             if (rowIndex < minRow) {
                 minRow = rowIndex;
             }
@@ -190,8 +199,8 @@ export function getSeparatedGrid(grid, selectedSet) {
 
 // helper for get data of cell from event target
 export function getCellFromTarget(target) {
-    const rowIndex = parseInt(target.getAttribute('data-row-index'));
-    const colIndex = parseInt(target.getAttribute('data-col-index'));
+    const rowIndex = Number(target.dataset.rowIndex);
+    const colIndex = Number(target.dataset.colIndex);
 
     return {
         rowIndex,
