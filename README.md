@@ -1,3 +1,7 @@
+# My demo
+
+Please check my demo here: [https://sonic16x.github.io/e-test-task/?width=10&height=15](https://sonic16x.github.io/e-test-task/?width=10&height=15)
+
 # Table with selection
 
 Your task is to develop a table component with cells merge funtional
