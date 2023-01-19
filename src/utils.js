@@ -25,6 +25,8 @@ export function getInitialGrid() {
                 colSpan: 1,
                 rowSpan: 1,
                 key: getCellKey(row, col), // string key of cell for using as key for component and index for Set
+                row,
+                col,
             });
         }
     }
@@ -37,11 +39,11 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
     const {startCell, endCell} = selection;
 
     // calculate real start and end cells
-    const rowStart = Math.min(startCell[0], endCell[0]);
-    const rowEnd = Math.max(startCell[0], endCell[0]);
+    const rowStart = Math.min(startCell.row, endCell.row);
+    const rowEnd = Math.max(startCell.row, endCell.row);
 
-    const colStart = Math.min(startCell[1], endCell[1]);
-    const colEnd = Math.max(endCell[1], startCell[1]);
+    const colStart = Math.min(startCell.col, endCell.col);
+    const colEnd = Math.max(endCell.col, startCell.col);
 
     for (let row = rowStart; row <= rowEnd; row++) {
         for (let col = colStart; col <= colEnd; col++) {
@@ -55,8 +57,8 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
             // if this cell root or has parent process new area recursively from start to end area
             if (cell.root || cell.parent) {
                 // get data for parent cell
-                const parentRow = cell.root ? row : cell.parent[0];
-                const parentCol = cell.root ? col : cell.parent[1];
+                const parentRow = cell.root ? row : cell.parent.row;
+                const parentCol = cell.root ? col : cell.parent.col;
                 const parentCell = cell.root ? cell : grid[parentRow][parentCol];
                 const parentKey = parentCell.key;
 
@@ -65,14 +67,14 @@ export function getSelected(grid, selection, selected = new Set(), processedRoot
                     processedRoots.add(parentKey); // set that this parent already processed
 
                     // calculate start and end cells for new area
-                    const startCell = [
-                        Math.min(rowStart, parentRow),
-                        Math.min(colStart, parentCol),
-                    ];
-                    const endCell = [
-                        Math.max(parentRow + parentCell.rowSpan - 1, rowEnd),
-                        Math.max(parentCol + parentCell.colSpan - 1, colEnd),
-                    ];
+                    const startCell = {
+                        row: Math.min(rowStart, parentRow),
+                        col: Math.min(colStart, parentCol)
+                    };
+                    const endCell = {
+                        row: Math.max(parentRow + parentCell.rowSpan - 1, rowEnd),
+                        col: Math.max(parentCol + parentCell.colSpan - 1, colEnd),
+                    };
 
                     // get new selected cells for this area recursively
                     getSelected(
@@ -122,7 +124,7 @@ export function getMergedGrid(grid, selectedSet) {
 
             return {
                 root: current,
-                parent: current ? null : [minRow, minCol],
+                parent: current ? null : {row: minRow, col: minCol},
                 colSpan: current ? (maxCol - minCol + 1) : 1,
                 rowSpan: current ? (maxRow - minRow + 1) : 1,
                 key: getCellKey(rowIndex, colIndex),
@@ -135,14 +137,14 @@ export function getMergedGrid(grid, selectedSet) {
     return {
         grid: mergedGrid,
         selection: {
-            startCell: [
-                minRow,
-                minCol,
-            ],
-            endCell: [
-                maxRow,
-                maxCol,
-            ],
+            startCell: {
+                row: minRow,
+                col: minCol,
+            },
+            endCell: {
+                row: maxRow,
+                col: maxCol,
+            },
         },
     };
 }
@@ -185,14 +187,14 @@ export function getSeparatedGrid(grid, selectedSet) {
     return {
         grid: separatedGrid,
         selection: {
-            startCell: [
-                minRow,
-                minCol,
-            ],
-            endCell: [
-                maxRow,
-                maxCol,
-            ],
+            startCell: {
+                row: minRow,
+                col: minCol,
+            },
+            endCell: {
+                row: maxRow,
+                col: maxCol,
+            },
         },
     };
 }

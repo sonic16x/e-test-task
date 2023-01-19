@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 
 import './styles.css';
 
@@ -13,9 +13,9 @@ import {
 import {Grid} from "./Grid";
 
 export const App = () => {
+    const tableRef = useRef(null);
     const [grid, setGrid] = useState(getInitialGrid());
-    const [selection, setSelection] = useState(null); // null || {startCell: [rowIndex, colIndex], endCell[rowIndex, colIndex]}
-    const [isMoving, setMoving] = useState(false);
+    const [selection, setSelection] = useState(null);
 
     const selectedSet = useMemo(() => {
         if (selection) {
@@ -41,30 +41,40 @@ export const App = () => {
         }
     }
 
-    const onDown = (e) => {
+    const onMove = (e) => {
         const {rowIndex, colIndex} = getCellFromTarget(e.target);
-        setSelection({
-            startCell: [rowIndex, colIndex],
-            endCell: [rowIndex, colIndex],
-        });
-        setMoving(true);
+
+        if (selection && (rowIndex !== selection.endCell.row || colIndex !== selection.endCell.col)) {
+            setSelection(({startCell}) => ({
+                startCell,
+                endCell: {
+                    row: rowIndex,
+                    col: colIndex,
+                },
+            }));
+        }
     }
 
     const onUp = () => {
-        setMoving(false);
+        tableRef.current.removeEventListener('mousemove', onMove);
+        tableRef.current.removeEventListener('mousemove', onMove);
     }
 
-    const onMove = (e) => {
-        if (isMoving) {
-            const {rowIndex, colIndex} = getCellFromTarget(e.target);
+    const onDown = (e) => {
+        const {rowIndex, colIndex} = getCellFromTarget(e.target);
+        setSelection({
+            startCell: {
+                row: rowIndex,
+                col: colIndex,
+            },
+            endCell: {
+                row: rowIndex,
+                col: colIndex,
+            },
+        });
 
-            if (rowIndex !== selection.endCell[0] || colIndex !== selection.endCell[1]) {
-                setSelection(({startCell}) => ({
-                    startCell,
-                    endCell: [rowIndex, colIndex],
-                }));
-            }
-        }
+        tableRef.current.addEventListener('mousemove', onMove);
+        tableRef.current.addEventListener('mouseup', onUp);
     }
 
     return (
@@ -86,9 +96,8 @@ export const App = () => {
                 </button>
             </div>
             <table
+                ref={tableRef}
                 onMouseDown={onDown}
-                onMouseUp={onUp}
-                onMouseMove={onMove}
             >
                 <tbody>
                     <Grid
